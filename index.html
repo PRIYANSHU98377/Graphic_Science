@@ -1,40 +1,107 @@
-<!DOCUMENT html>
-<html lang = "en">
-
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset = "UTF-8">
-<mta name = "viewport" content="width=device-width,initial-scale=1">
-
-<title> Virtual Graphics Lab </title>
-
-<link rel = "stylesheet" href="style.css">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f7">
+  <title>Regular Hexagon | Virtual Graphics Laboratory</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
-<header>
-<h1> Virtual Graphics Laboratory </h1>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Virtual Graphics Laboratory home">
+      <span class="brand-mark" aria-hidden="true">VG</span>
+      <span><strong>Virtual Graphics Laboratory</strong><small>ENGINEERING DRAWING · YEAR 1</small></span>
+    </a>
+    <span class="topbar-tag"><span class="live-dot"></span> INTERACTIVE PRACTICAL</span>
+  </header>
 
-<p> Construction of Regualr hexagon using concentric circle method </p>
+  <main class="page-shell">
+    <section class="experiment-heading">
+      <div>
+        <p class="eyebrow">CONSTRUCTIONS · POLYGONS</p>
+        <h1>Regular hexagon <span>by concentric circles</span></h1>
+        <p class="heading-copy">A guided drawing-board practical. Watch each instrument move, then follow every construction line.</p>
+      </div>
+      <div class="experiment-badge"><span>01</span><div><strong>Guided lab</strong><small>Approx. 8 minutes</small></div></div>
+    </section>
 
-</header>
+    <section class="instrument-panel" aria-labelledby="instruments-heading">
+      <div class="section-heading"><div><p class="eyebrow">YOUR DRAWING BOARD</p><h2 id="instruments-heading">Required instruments</h2></div><span class="kit-count">7 ITEMS</span></div>
+      <div class="instrument-list">
+        <div class="instrument-card"><span class="instrument-icon paper-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M10 5h14l7 7v23H10z"/><path d="M24 5v8h7M15 20h11M15 25h11M15 30h7"/></svg></span><span><strong>Drawing sheet</strong><small>Clean, flat surface</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M5 12h28M9 9v6M29 9v6M19 12v22M15 34h8M19 18l-4 4M19 18l4 4"/></svg></span><span><strong>Drafter</strong><small>Parallel &amp; right-angle lines</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M13 7a4 4 0 0 1 8 0v5h-8zM17 12l-7 22M17 12l12 22M10 34l-2 3M29 34l2 3M21 7h9"/></svg></span><span><strong>Compass</strong><small>Circles &amp; equal arcs</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M10 6l20 20M7 9l3-3M27 29l3-3M9 8l19 19M8 11l-2 22M29 27l5 14"/></svg></span><span><strong>Divider</strong><small>Transfer distances</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon pencil-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M10 28L27 9l6 5-17 19-8 2zM23 13l6 5M8 35l-1 2"/></svg></span><span><strong>H pencil</strong><small>Fine, light guidelines</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 25l15-16a4 4 0 0 1 6 0l4 4a4 4 0 0 1 0 6L18 34H8zM8 25l10 9M14 19l10 10"/></svg></span><span><strong>Eraser</strong><small>Remove unwanted marks</small></span></div>
+        <div class="instrument-card"><span class="instrument-icon" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M14 8h12l-2 24h-8zM12 8h16v5H12zM17 4h6v4h-6zM16 18h8"/></svg></span><span><strong>Sharpener</strong><small>Keep the pencil point fine</small></span></div>
+      </div>
+    </section>
 
-<div class = "container">
+    <section class="lab-layout" aria-label="Interactive drawing laboratory">
+      <div class="board-column">
+        <div class="board-toolbar">
+          <div class="board-label"><span class="board-live-dot"></span><span id="board-status">PRACTICAL PREVIEW</span></div>
+          <div class="camera-readout"><span class="camera-icon" aria-hidden="true">⌕</span><span id="zoom-label">BOARD VIEW · 100%</span></div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="drawing-board" width="900" height="620" role="img" aria-label="Engineering drawing board showing the construction of a regular hexagon"></canvas>
+          <div class="board-watermark" aria-hidden="true">GRAPHIC SCIENCE <span>·</span> PLATE 01</div>
+          <div class="tool-indicator" id="tool-indicator" aria-live="polite"><span class="tool-indicator-dot"></span><span id="active-tool">INSTRUMENTS READY</span></div>
+          <div class="intro-overlay" id="intro-overlay">
+            <div class="intro-card">
+              <span class="intro-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="25"/><circle cx="32" cy="32" r="16"/><path d="M32 7v50M7 32h50M19.5 10.3l25 43.4M44.5 10.3l-25 43.4"/></svg></span>
+              <p class="eyebrow">VIRTUAL PRACTICAL · 01</p>
+              <h2>Ready at the<br>drawing board?</h2>
+              <p>Construct a regular hexagon using concentric circles. Your instructor will demonstrate every instrument movement, mark and line.</p>
+              <div class="objective"><strong>OBJECTIVE</strong><span>Use compass divisions and radial construction lines to draw and verify a six-sided regular polygon.</span></div>
+              <button class="button button-primary start-button" id="start-experiment">Start experiment <span aria-hidden="true">→</span></button>
+              <small class="intro-footnote">You can pause, repeat, or revisit any step.</small>
+            </div>
+          </div>
+        </div>
+        <div class="playback-bar">
+          <div class="playback-progress"><span id="progress-fill"></span></div>
+          <div class="playback-meta"><span id="step-counter">READY TO BEGIN</span><span id="elapsed-time">00:00</span></div>
+        </div>
+      </div>
 
-<canvas id = "canvas" width = "700" height = "600"> </canvas>
+      <aside class="lesson-panel">
+        <div class="lesson-topline"><span class="lesson-chip">INSTRUCTOR MODE</span><span id="step-number">— / 14</span></div>
+        <p class="eyebrow lesson-eyebrow">CONSTRUCTION GUIDE</p>
+        <h2 id="step-title">Your practical starts here</h2>
+        <p class="step-description" id="step-description">Start the experiment to see the drawing sheet and instruments placed on the board.</p>
+        <div class="lesson-divider"></div>
+        <div class="teaching-note"><span class="note-icon" aria-hidden="true">i</span><div><strong id="note-heading">Before you begin</strong><p id="step-why">Keep construction lines light. Final outlines will be darkened only after the construction is complete.</p></div></div>
+        <div class="rule-card"><span class="rule-mark" aria-hidden="true">↗</span><div><span>DRAWING RULE</span><p id="step-rule">Use a sharp H pencil for thin, clean construction lines.</p></div></div>
+        <div class="active-instrument"><span class="active-tool-icon" aria-hidden="true">⌁</span><div><span>INSTRUMENT IN USE</span><strong id="step-instrument">Ready for the practical</strong></div></div>
+        <div class="action-readout"><span class="action-pulse"></span><span id="action-label">Click Start experiment when you are ready.</span></div>
+        <div class="step-controls">
+          <button class="button button-quiet" id="previous-step" disabled><span aria-hidden="true">←</span> Previous</button>
+          <button class="button button-repeat" id="repeat-step" disabled title="Repeat this step"><span aria-hidden="true">↻</span> Repeat</button>
+          <button class="button button-next" id="next-step" disabled>Next <span aria-hidden="true">→</span></button>
+        </div>
+        <div class="control-foot"><span id="next-prompt">The demonstration begins when you press Start.</span><button id="restart-experiment" class="text-button">Restart experiment</button></div>
+      </aside>
+    </section>
 
-<div class = "buttons">
+    <section class="procedure-strip" aria-label="Construction steps">
+      <div class="section-heading"><div><p class="eyebrow">THE CONSTRUCTION</p><h2>14 deliberate steps</h2></div><span class="procedure-hint">Select a completed step to review it</span></div>
+      <div class="step-track" id="step-track"></div>
+    </section>
 
-<button id = "draw"> Draw </button>
+    <section class="completion-panel" id="completion-panel" hidden aria-live="polite">
+      <div class="completion-heading"><span class="completion-check" aria-hidden="true">✓</span><div><p class="eyebrow">PRACTICAL COMPLETE</p><h2>Experiment completed successfully.</h2><p>Your hexagon is constructed and checked against the drawing requirements.</p></div></div>
+      <div class="completion-content">
+        <div class="verification-list" id="verification-list"></div>
+        <div class="result-stats"><div><span>CONSTRUCTION ACCURACY</span><strong id="accuracy-stat">—</strong></div><div><span>TIME TAKEN</span><strong id="time-stat">—</strong></div><div><span>DRAWING SCORE</span><strong id="score-stat">—</strong></div><div><span>MARKS OBTAINED</span><strong id="marks-stat">—</strong></div></div>
+      </div>
+      <div class="completion-actions"><button class="button button-quiet" id="replay-animation">↻ Replay animation</button><button class="button button-quiet" id="download-pdf">↓ Download PDF</button><button class="button button-primary" id="restart-from-completion">Restart experiment</button></div>
+    </section>
 
-<button id = "step"> Next Step </button>
-
-<button id = "reset"> Reset </button>
-
-</div>
-
-</div>
-
-<script src = "script.js"> </script>
-
+    <footer class="page-footer"><span>VIRTUAL GRAPHICS LABORATORY</span><span>Practice carefully. Draft precisely.</span></footer>
+  </main>
+  <script src="script.js"></script>
 </body>
-
 </html>

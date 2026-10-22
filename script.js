@@ -7,6 +7,8 @@
   const cy = 322;
   const outerRadius = 174;
   const innerRadius = 112;
+  const outerCenter = { x: cx, y: cy };
+  const innerCenter = { x: cx, y: cy };
   const duration = 590;
 
   const steps = [
@@ -165,6 +167,8 @@
     restart: document.getElementById("restart-experiment"),
     track: document.getElementById("step-track"),
     completion: document.getElementById("completion-panel"),
+    mistake: document.getElementById("mistake-feedback"),
+    mistakeMessage: document.getElementById("mistake-message"),
     action: document.getElementById("action-label"),
     actionBox: document.querySelector(".action-readout"),
     progress: document.getElementById("progress-fill"),
@@ -189,6 +193,8 @@
   let progress = 0;
   let completedSteps = 0;
   let isRunning = false;
+  let hasMistake = false;
+  let errorPoint = null;
   let startedAt = 0;
   let timerId = 0;
   let animationId = 0;
@@ -218,7 +224,7 @@
     [...elements.track.children].forEach((button, index) => {
       button.classList.toggle("done", index < completedSteps);
       button.classList.toggle("current", index === currentStep && currentStep >= 0);
-      button.disabled = isRunning || index >= completedSteps;
+      button.disabled = isRunning || hasMistake || index >= completedSteps;
     });
   }
 
@@ -282,14 +288,14 @@
     ctx.restore();
   }
 
-  function drawCircle(radius, fraction, lineWidth = 1, alpha = 0.52, color = "#83918a") {
+  function drawCircle(radius, fraction, lineWidth = 1, alpha = 0.52, color = "#83918a", center = outerCenter) {
     if (fraction <= 0) return;
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(fraction, 1));
+    ctx.arc(center.x, center.y, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(fraction, 1));
     ctx.stroke();
     ctx.restore();
   }
@@ -299,21 +305,19 @@
     const p = ease(amount);
     const startX = 112;
     const startY = 105;
-    const targetX = 162;
-    const targetY = cy - 45;
-    const x = startX + (targetX - startX) * p;
-    const y = startY + (targetY - startY) * p;
+    const x = startX + (cx - startX) * p;
+    const y = startY + (cy - startY) * p;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle * p);
     ctx.fillStyle = "#769889";
     ctx.globalAlpha = .25;
-    ctx.fillRect(-10, -5, 292, 10);
+    ctx.fillRect(-180, -5, 360, 10);
     ctx.globalAlpha = .85;
     ctx.fillStyle = "#9db4a8";
-    ctx.fillRect(-10, -4, 292, 5);
+    ctx.fillRect(-180, -4, 360, 5);
     ctx.fillStyle = "#516e62";
-    for (let tick = 0; tick < 15; tick++) ctx.fillRect(tick * 17, -3, 1, tick % 5 === 0 ? 3 : 1.5);
+    for (let tick = 0; tick < 21; tick++) ctx.fillRect(-170 + tick * 17, -3, 1, tick % 5 === 0 ? 3 : 1.5);
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -535,6 +539,71 @@
     }
   }
 
+  function distanceToSegment(point, start, end) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+    return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+  }
+
+  function isExpectedPlacement(point) {
+    const distanceFromCenter = Math.hypot(point.x - cx, point.y - cy);
+    const onCircle = (radius, tolerance) => Math.abs(distanceFromCenter - radius) <= tolerance;
+    switch (currentStep) {
+      case 0:
+        return point.x >= 48 && point.x <= 852 && point.y >= 35 && point.y <= 583;
+      case 1:
+        return point.x >= 138 && point.x <= 762 && Math.abs(point.y - cy) <= 12;
+      case 2:
+        return distanceFromCenter <= 16;
+      case 3:
+        return distanceFromCenter <= 16 || onCircle(outerRadius, 13);
+      case 4:
+        return distanceFromCenter <= 16 || onCircle(innerRadius, 13);
+      case 5:
+        return Math.abs(point.y - cy) <= 13 && distanceFromCenter <= outerRadius + 10;
+      case 6:
+        return Math.abs(point.x - cx) <= 13 && distanceFromCenter <= outerRadius + 10;
+      case 7:
+      case 12:
+        return true;
+      case 8:
+        return onCircle(outerRadius, 17);
+      case 9:
+        return Array.from({ length: 6 }, (_, index) => {
+          const vertex = pointsOn(outerRadius, index);
+          return distanceToSegment(point, { x: cx, y: cy }, vertex) <= 13;
+        }).some(Boolean);
+      case 10:
+        return onCircle(innerRadius, 14);
+      case 11:
+      case 13:
+        return Array.from({ length: 6 }, (_, index) => distanceToSegment(point, pointsOn(innerRadius, index), pointsOn(innerRadius, (index + 1) % 6)) <= 13).some(Boolean);
+      default:
+        return false;
+    }
+  }
+
+  function expectedMethod() {
+    return [
+      "Place the sheet squarely inside the drawing-board margin.",
+      "Align the drafter blade with the horizontal reference before locking it.",
+      "Mark centre O on the reference line, at the centre of the drawing area.",
+      "Keep the compass needle fixed at O and set the required circle radius.",
+      "Reduce the compass opening without shifting its needle from O.",
+      "Draw the diameter straight through centre O.",
+      "Turn the drafter by 90° and keep the blade through O.",
+      "This step is an explanation; no mark is needed on the sheet.",
+      "Place each compass point on the outer-circle circumference at the next equal division.",
+      "Draw each radius from O to an outer-circle division.",
+      "Mark the intersection of a radius and the inner circle.",
+      "Join adjacent vertices in order and stop exactly at each point.",
+      "Keep useful construction lines visible; no erasing is required.",
+      "Darken only the six final sides, keeping the construction geometry light."
+    ][currentStep];
+  }
+
   function drawCenterAndLabel(centerAmount, labelAmount) {
     if (centerAmount > 0) {
       ctx.save();
@@ -556,7 +625,18 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const place = stepFraction(0);
     drawSheet(place);
-    if (place <= 0) return;
+    if (place <= 0) {
+      if (errorPoint) {
+        ctx.save();
+        ctx.strokeStyle = "#b84c41";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(errorPoint.x, errorPoint.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      return;
+    }
 
     const activeStep = currentStep;
     const zoom = activeStep === 3 || activeStep === 4 || activeStep === 8 || activeStep === 10 || activeStep === 11 ? 1.045 : 1;
@@ -581,15 +661,27 @@
 
     drawReferenceLine(reference);
     drawCenterAndLabel(centerProgress, centerLabel);
-    drawCircle(outerRadius, outerCircle, 1.2, .43);
-    drawCircle(innerRadius, innerCircle, 1.15, .42);
+    drawCircle(outerRadius, outerCircle, 1.2, .43, "#83918a", outerCenter);
+    drawCircle(innerRadius, innerCircle, 1.15, .42, "#83918a", innerCenter);
     drawAxes(horizontal, vertical);
     drawOuterPointsAndArcs(divisions);
     drawRadials(radii);
     drawInnerMarks(vertexMarks);
     drawHexSides(sides, false);
     drawHexSides(darken, true);
-    if (reference >= 1) drawDrafter(1, (activeStep === 6 && isRunning) ? -Math.PI / 2 * progress : 0);
+    const drafterSteps = [1, 5, 6, 9, 11, 13];
+    if (reference >= 1 && isRunning && drafterSteps.includes(activeStep)) {
+      let drafterAngle = 0;
+      if (activeStep === 6) drafterAngle = -Math.PI / 2 * actionProgress(6, 1);
+      if (activeStep === 9) drafterAngle = pointsOn(1, Math.min(5, Math.floor(progress * 6))).angle;
+      if (activeStep === 11 || activeStep === 13) {
+        const index = Math.min(5, Math.floor(progress * 6));
+        const from = pointsOn(innerRadius, index);
+        const to = pointsOn(innerRadius, (index + 1) % 6);
+        drafterAngle = Math.atan2(to.y - from.y, to.x - from.x);
+      }
+      drawDrafter(1, drafterAngle);
+    }
     if (activeStep === 3 && isRunning) drawCompass(progress, -1);
     if (activeStep === 4 && isRunning) drawCompass(progress, -2);
     if ((activeStep === 5 || activeStep === 6 || activeStep === 9 || activeStep === 11 || activeStep === 13) && isRunning) {
@@ -600,6 +692,19 @@
     drawSteppingCompass();
     drawCenterAndLabel(centerProgress, centerLabel);
     drawInnerMarks(activeStep >= 13 ? 1 : vertexMarks, darken >= 1);
+    if (errorPoint) {
+      ctx.save();
+      ctx.strokeStyle = "#b84c41";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(errorPoint.x, errorPoint.y, 10, 0, Math.PI * 2);
+      ctx.moveTo(errorPoint.x - 5, errorPoint.y);
+      ctx.lineTo(errorPoint.x + 5, errorPoint.y);
+      ctx.moveTo(errorPoint.x, errorPoint.y - 5);
+      ctx.lineTo(errorPoint.x, errorPoint.y + 5);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.restore();
     fields.boardStatus.textContent = isRunning ? "DEMONSTRATION IN PROGRESS" : completedSteps === steps.length ? "CONSTRUCTION COMPLETE" : "GUIDED DRAWING BOARD";
   }
@@ -618,6 +723,13 @@
 
   function setActionLabel() {
     const step = steps[currentStep];
+    if (hasMistake) {
+      elements.action.textContent = "Incorrect placement highlighted. Review the correction and retry this step.";
+      elements.actionBox.classList.remove("running");
+      elements.toolBadge.classList.remove("active");
+      elements.activeTool.textContent = "PLACEMENT NEEDS CORRECTION";
+      return;
+    }
     const actionIndex = Math.min(step.actions.length - 1, Math.floor(progress * step.actions.length));
     elements.action.textContent = isRunning ? step.actions[actionIndex] : completedSteps === steps.length ? "Construction checked. Your drawing is complete." : "Step complete. Continue when you are ready.";
     elements.actionBox.classList.toggle("running", isRunning);
@@ -634,11 +746,11 @@
     fields.rule.textContent = step.rule;
     fields.instrument.textContent = step.instrument;
     document.getElementById("note-heading").textContent = currentStep === 7 ? "Why this works" : "Why this step";
-    fields.prompt.textContent = isRunning ? "Watch the movement; every action is shown." : completedSteps === steps.length ? "All construction checks passed." : "Proceed to the next step when ready.";
+    fields.prompt.textContent = hasMistake ? "Review the correction, then retry this step." : isRunning ? "Watch the movement; every action is shown." : completedSteps === steps.length ? "All construction checks passed." : "Proceed to the next step when ready.";
     elements.stepCounter.textContent = `STEP ${String(currentStep + 1).padStart(2, "0")} OF ${steps.length}`;
     elements.progress.style.width = `${(completedSteps / steps.length) * 100}%`;
-    elements.next.disabled = isRunning || completedSteps === steps.length;
-    elements.previous.disabled = isRunning || currentStep <= 0;
+    elements.next.disabled = isRunning || hasMistake || completedSteps === steps.length;
+    elements.previous.disabled = isRunning || hasMistake || currentStep <= 0;
     elements.repeat.disabled = isRunning || currentStep < 0;
     updateTrack();
     setActionLabel();
@@ -652,6 +764,11 @@
   function playCurrentStep() {
     if (currentStep < 0 || currentStep >= steps.length) return;
     cancelAnimationFrame(animationId);
+    elements.completion.hidden = true;
+    if (startedAt && !timerId) timerId = window.setInterval(updateTimer, 1000);
+    hasMistake = false;
+    errorPoint = null;
+    elements.mistake.hidden = true;
     isRunning = true;
     progress = 0;
     updateLesson();
@@ -686,43 +803,58 @@
   }
 
   function showCompletion() {
-    const checklist = [
-      "Outer construction circle exists",
-      "Inner construction circle exists",
-      "Both circles share centre O",
-      "Six equal divisions are marked",
-      "All six sides have equal length",
-      "Vertices are connected in order",
-      "Vertex labels A–F are visible",
-      "Final hexagon is darkened; guides stay light"
+    const outerPoints = Array.from({ length: 6 }, (_, index) => pointsOn(outerRadius, index));
+    const innerPoints = Array.from({ length: 6 }, (_, index) => pointsOn(innerRadius, index));
+    const sideLengths = innerPoints.map((point, index) => Math.hypot(point.x - innerPoints[(index + 1) % 6].x, point.y - innerPoints[(index + 1) % 6].y));
+    const divisionLengths = outerPoints.map((point, index) => Math.hypot(point.x - outerPoints[(index + 1) % 6].x, point.y - outerPoints[(index + 1) % 6].y));
+    const sideError = Math.max(...sideLengths) - Math.min(...sideLengths);
+    const divisionError = Math.max(...divisionLengths) - Math.min(...divisionLengths);
+    const checks = [
+      { label: "Outer construction circle exists", passed: completedSteps >= 4 && outerRadius > 0 },
+      { label: "Inner construction circle exists", passed: completedSteps >= 5 && innerRadius > 0 && innerRadius < outerRadius },
+      { label: "Both circles share centre O", passed: Math.hypot(outerCenter.x - innerCenter.x, outerCenter.y - innerCenter.y) < 0.001 },
+      { label: "Six equal divisions are marked", passed: completedSteps >= 9 && divisionLengths.length === 6 && divisionError < 0.0001 },
+      { label: "All six sides have equal length", passed: completedSteps >= 12 && sideLengths.length === 6 && sideError < 0.0001 },
+      { label: "Vertices are connected in order", passed: completedSteps >= 12 },
+      { label: "Vertex labels A–F are visible", passed: completedSteps >= 11 },
+      { label: "Final hexagon is darkened; guides stay light", passed: completedSteps >= 14 && 3.3 > 1.15 }
     ];
-    document.getElementById("verification-list").replaceChildren(...checklist.map((label) => {
+    const passedChecks = checks.filter((check) => check.passed).length;
+    const score = Math.round((passedChecks / checks.length) * 100);
+    const accuracy = Math.max(0, Math.round((1 - sideError / innerRadius) * 100));
+    document.getElementById("verification-list").replaceChildren(...checks.map(({ label, passed }) => {
       const item = document.createElement("div");
       item.className = "verification-item";
       const tick = document.createElement("span");
-      tick.textContent = "✓";
+      tick.textContent = passed ? "✓" : "!";
+      if (!passed) item.classList.add("failed");
       item.append(tick, document.createTextNode(label));
       return item;
     }));
-    document.getElementById("accuracy-stat").textContent = "100%";
-    document.getElementById("score-stat").textContent = "100 / 100";
-    document.getElementById("marks-stat").textContent = "10 / 10";
+    document.getElementById("accuracy-stat").textContent = `${accuracy}%`;
+    document.getElementById("score-stat").textContent = `${score} / 100`;
+    document.getElementById("marks-stat").textContent = `${Math.round(score / 10)} / 10`;
     updateTimer();
     elements.completion.hidden = false;
     elements.completion.scrollIntoView({ behavior: "smooth", block: "nearest" });
     fields.boardStatus.textContent = "CONSTRUCTION COMPLETE";
     elements.activeTool.textContent = "FINAL DRAWING COMPLETE";
     window.clearInterval(timerId);
+    timerId = 0;
   }
 
   function restartExperiment() {
     cancelAnimationFrame(animationId);
     window.clearInterval(timerId);
+    timerId = 0;
     isRunning = false;
     startedAt = 0;
     currentStep = -1;
     progress = 0;
     completedSteps = 0;
+    hasMistake = false;
+    errorPoint = null;
+    elements.mistake.hidden = true;
     elements.timer.textContent = "00:00";
     elements.completion.hidden = true;
     elements.overlay.classList.remove("dismissed");
@@ -771,6 +903,27 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   document.getElementById("download-pdf").addEventListener("click", () => window.print());
+  document.getElementById("mistake-retry").addEventListener("click", () => {
+    if (hasMistake) playCurrentStep();
+  });
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!isRunning || currentStep < 0) return;
+    const bounds = canvas.getBoundingClientRect();
+    const zoom = currentStep === 3 || currentStep === 4 || currentStep === 8 || currentStep === 10 || currentStep === 11 ? 1.045 : 1;
+    const point = {
+      x: cx + ((event.clientX - bounds.left) * canvas.width / bounds.width - cx) / zoom,
+      y: cy + ((event.clientY - bounds.top) * canvas.height / bounds.height - cy) / zoom
+    };
+    if (isExpectedPlacement(point)) return;
+    cancelAnimationFrame(animationId);
+    isRunning = false;
+    hasMistake = true;
+    errorPoint = point;
+    elements.mistakeMessage.textContent = expectedMethod();
+    elements.mistake.hidden = false;
+    drawScene();
+    updateLesson();
+  });
 
   makeTrack();
 })();

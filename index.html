@@ -49,6 +49,10 @@
           <canvas id="drawing-board" width="900" height="620" role="img" aria-label="Engineering drawing board showing the construction of a regular hexagon"></canvas>
           <div class="board-watermark" aria-hidden="true">GRAPHIC SCIENCE <span>·</span> PLATE 01</div>
           <div class="tool-indicator" id="tool-indicator" aria-live="polite"><span class="tool-indicator-dot"></span><span id="active-tool">INSTRUMENTS READY</span></div>
+          <div class="mistake-feedback" id="mistake-feedback" hidden role="alert">
+            <span class="mistake-icon" aria-hidden="true">!</span>
+            <div><strong>Pause and correct the placement</strong><p id="mistake-message">The mark is away from the expected construction path.</p><button class="mistake-retry" id="mistake-retry">Retry this step</button></div>
+          </div>
           <div class="intro-overlay" id="intro-overlay">
             <div class="intro-card">
               <span class="intro-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="25"/><circle cx="32" cy="32" r="16"/><path d="M32 7v50M7 32h50M19.5 10.3l25 43.4M44.5 10.3l-25 43.4"/></svg></span>
